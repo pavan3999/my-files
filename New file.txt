@@ -1,0 +1,1218 @@
+┌──(pavan3999㉿localhost)-[~]
+└─$ su -c '
+echo "========== ADB INIT SERVICE =========="
+sed -n "1,115p" /system/etc/init/hw/init.usb.rc
+                                                       
+echo
+echo "========== ADB INIT FILE OWNERSHIP =========="
+ls -lZ /system/etc/init/hw/init.usb.rc
+ls -lZ /apex/com.android.adbd/bin/adbd
+
+echo
+echo "========== KERNELSU ADB REFERENCES =========="
+grep -RniE "root_seclabel|tim_seclabel|adbd" \
+/data/adb/ksu \
+/data/adb/modules \
+2>/dev/null | head -150
+
+echo
+echo "========== ADB SERVICE LOGS =========="
+logcat -b all -d -v time 2>/dev/null |
+grep -iE "adbd|root_seclabel|tradeinmode" | tail -100
+'
+========== ADB INIT SERVICE ==========
+# Copyright (C) 2012 The Android Open Source Project
+#
+# USB configuration common for all android devices
+#
+
+on post-fs-data
+    chown system system /sys/class/android_usb/android0
+/f_mass_storage/lun/file
+    chmod 0660 /sys/class/android_usb/android0/f_mass_s
+torage/lun/file
+    chown system system /sys/class/android_usb/android0
+/f_rndis/ethaddr
+    chmod 0660 /sys/class/android_usb/android0/f_rndis/
+ethaddr
+    mkdir /data/misc/adb 02750 system shell
+    mkdir /data/adb 0700 root root encryption=Require
+
+# adbd is controlled via property triggers in init.<pla
+tform>.usb.rc
+service adbd /system/bin/adbd --root_seclabel=u:r:su:s0
+    class core
+    socket adbd seqpacket 660 system system
+    disabled
+    updatable
+    seclabel u:r:adbd:s0
+    user root
+
+on property:vendor.sys.usb.adb.disabled=*
+    setprop sys.usb.adb.disabled ${vendor.sys.usb.adb.d
+isabled}
+
+# Set default value on sys.usb.configfs early in boot s
+equence. It will be
+# overridden in `on boot` action of init.hardware.rc.
+on init
+    setprop sys.usb.configfs 0
+
+# Used to disable USB when switching states
+on property:sys.usb.config=none && property:sys.usb.con
+figfs=0
+    stop adbd
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/bDeviceClass 
+0
+    setprop sys.usb.state ${sys.usb.config}
+
+# adb only USB configuration
+# This is the fallback configuration if the
+# USB manager fails to set a standard configuration
+on property:sys.usb.config=adb && property:sys.usb.conf
+igfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 18d1
+    write /sys/class/android_usb/android0/idProduct 4EE
+7
+    write /sys/class/android_usb/android0/functions ${s
+ys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+    setprop sys.usb.state ${sys.usb.config}
+
+# USB accessory configuration
+on property:sys.usb.config=accessory && property:sys.us
+b.configfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 18d1
+    write /sys/class/android_usb/android0/idProduct 2d0
+0
+    write /sys/class/android_usb/android0/functions ${s
+ys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    setprop sys.usb.state ${sys.usb.config}
+
+# USB accessory configuration, with adb
+on property:sys.usb.config=accessory,adb && property:sy
+s.usb.configfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 18d1
+    write /sys/class/android_usb/android0/idProduct 2d0
+1
+    write /sys/class/android_usb/android0/functions ${s
+ys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+    setprop sys.usb.state ${sys.usb.config}
+
+# audio accessory configuration
+on property:sys.usb.config=audio_source && property:sys
+.usb.configfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 18d1
+    write /sys/class/android_usb/android0/idProduct 2d0
+2
+    write /sys/class/android_usb/android0/functions ${s
+ys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    setprop sys.usb.state ${sys.usb.config}
+
+# audio accessory configuration, with adb
+on property:sys.usb.config=audio_source,adb && property
+:sys.usb.configfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 18d1
+    write /sys/class/android_usb/android0/idProduct 2d0
+3
+    write /sys/class/android_usb/android0/functions ${s
+ys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+    setprop sys.usb.state ${sys.usb.config}
+
+# USB and audio accessory configuration
+on property:sys.usb.config=accessory,audio_source && pr
+operty:sys.usb.configfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 18d1
+    write /sys/class/android_usb/android0/idProduct 2d0
+4
+    write /sys/class/android_usb/android0/functions ${s
+ys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    setprop sys.usb.state ${sys.usb.config}
+
+# USB and audio accessory configuration, with adb
+on property:sys.usb.config=accessory,audio_source,adb &
+& property:sys.usb.configfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 18d1
+    write /sys/class/android_usb/android0/idProduct 2d0
+5
+    write /sys/class/android_usb/android0/functions ${s
+ys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+    setprop sys.usb.state ${sys.usb.config}
+
+# Used to set USB configuration at boot and to switch t
+he configuration
+# when changing the default configuration
+on boot && property:persist.sys.usb.config=*
+    setprop sys.usb.config ${persist.sys.usb.config}
+
+#
+# USB type C
+#
+
+
+========== ADB INIT FILE OWNERSHIP ==========
+-rw-r--r-- 1 root root u:object_r:system_file:s0  6018 
+2009-01-01 05:30 /system/etc/init/hw/init.usb.rc
+-rwxr-xr-x 1 root shell u:object_r:adbd_exec:s0  271994
+4 1970-01-01 05:30 /apex/com.android.adbd/bin/adbd
+
+========== KERNELSU ADB REFERENCES ==========
+Binary file /data/adb/ksu/bin/resetprop matches
+Binary file /data/adb/ksu/bin/resetprop matches
+Binary file /data/adb/ksu/bin/resetprop matches
+Binary file /data/adb/ksu/bin/resetprop matches
+Binary file /data/adb/ksu/bin/resetprop matches
+Binary file /data/adb/ksu/bin/resetprop matches
+Binary file /data/adb/ksu/bin/resetprop matches
+Binary file /data/adb/ksu/bin/resetprop matches
+Binary file /data/adb/ksu/bin/resetprop matches
+Binary file /data/adb/ksu/bin/ksud matches
+Binary file /data/adb/ksu/bin/ksud matches
+Binary file /data/adb/ksu/bin/ksud matches
+Binary file /data/adb/ksu/bin/ksud matches
+Binary file /data/adb/ksu/bin/ksud matches
+Binary file /data/adb/ksu/bin/ksud matches
+Binary file /data/adb/ksu/bin/ksud matches
+Binary file /data/adb/ksu/bin/ksud matches
+Binary file /data/adb/ksu/bin/ksud matches
+/data/adb/ksu/log/sulog-2026-11-11.log:5300:ts_ns=10910
+655098 seq=116 type=root_execve version=1 retval=0 pid=
+2076 tgid=2076 ppid=1 uid=0 euid=0 comm="init" file="/a
+pex/com.android.adbd/bin/adbd" argv="/apex/com.android.
+adbd/bin/adbd --root_seclabel=u:r:su:s0 --tim_seclabel=
+u:r:adbd_tradeinmode:s0"
+/data/adb/ksu/log/sulog-2026-11-11.log:7323:ts_ns=10991
+370203 seq=116 type=root_execve version=1 retval=0 pid=
+2070 tgid=2070 ppid=1 uid=0 euid=0 comm="init" file="/a
+pex/com.android.adbd/bin/adbd" argv="/apex/com.android.
+adbd/bin/adbd --root_seclabel=u:r:su:s0 --tim_seclabel=
+u:r:adbd_tradeinmode:s0"
+/data/adb/ksu/log/sulog-2026-11-11.log:8703:ts_ns=11398
+627389 seq=139 type=root_execve version=1 retval=0 pid=
+2101 tgid=2101 ppid=1 uid=0 euid=0 comm="init" file="/a
+pex/com.android.adbd/bin/adbd" argv="/apex/com.android.
+adbd/bin/adbd --root_seclabel=u:r:su:s0 --tim_seclabel=
+u:r:adbd_tradeinmode:s0"
+/data/adb/ksu/log/sulog-2026-11-11.log:9032:ts_ns=29116
+3465511 seq=468 type=root_execve version=1 retval=0 pid
+=24977 tgid=24977 ppid=24894 uid=0 euid=0 comm="sh" fil
+e="/system/bin/stop" argv="stop adbd"
+/data/adb/ksu/log/sulog-2026-11-11.log:9033:ts_ns=29118
+9426188 seq=469 type=root_execve version=1 retval=0 pid
+=24980 tgid=24980 ppid=24894 uid=0 euid=0 comm="sh" fil
+e="/system/bin/start" argv="start adbd"
+/data/adb/ksu/log/sulog-2026-11-11.log:9034:ts_ns=29125
+1009053 seq=470 type=root_execve version=1 retval=0 pid
+=24983 tgid=24983 ppid=1 uid=0 euid=0 comm="init" file=
+"/apex/com.android.adbd/bin/adbd" argv="/apex/com.andro
+id.adbd/bin/adbd --root_seclabel=u:r:su:s0 --tim_seclab
+el=u:r:adbd_tradeinmode:s0"
+/data/adb/ksu/log/sulog-2026-11-11.log:9035:ts_ns=43244
+6820301 seq=471 type=sucompat version=1 retval=0 pid=29
+861 tgid=29861 ppid=24827 uid=10349 euid=10349 comm="sh
+" file="/system/bin/su" argv="/system/bin/su -c \necho 
+\"=== ADB properties ===\"\ngetprop | grep -iE \"adb|de
+bug\"\n\necho\necho \"=== ADB daemon ===\"\ngetprop ini
+t.svc.adbd\n\necho\necho \"=== ADB TCP ports ===\"\nss 
+-lntp 2>/dev/null | grep -E \":5555|:5556\"\n\necho\nec
+ho \"=== ADB USB configuration ===\"\ngetprop sys.usb."
+/data/adb/ksu/log/sulog-2026-11-11.log:9036:ts_ns=43246
+4579832 seq=472 type=root_execve version=1 retval=0 pid
+=29861 tgid=29861 ppid=24827 uid=0 euid=0 comm="3" file
+="/system/bin/sh" argv="/system/bin/sh -c \necho \"=== 
+ADB properties ===\"\ngetprop | grep -iE \"adb|debug\"\
+n\necho\necho \"=== ADB daemon ===\"\ngetprop init.svc.
+adbd\n\necho\necho \"=== ADB TCP ports ===\"\nss -lntp 
+2>/dev/null | grep -E \":5555|:5556\"\n\necho\necho \"=
+== ADB USB configuration ===\"\ngetprop sys.usb."
+/data/adb/ksu/log/sulog-2026-11-11.log:9039:ts_ns=43252
+0806551 seq=475 type=root_execve version=1 retval=0 pid
+=29867 tgid=29867 ppid=29861 uid=0 euid=0 comm="sh" fil
+e="/system/bin/getprop" argv="getprop init.svc.adbd"
+/data/adb/ksu/log/sulog-2026-11-11.log:9044:ts_ns=60036
+3529508 seq=480 type=sucompat version=1 retval=0 pid=49
+37 tgid=4937 ppid=24827 uid=10349 euid=10349 comm="sh" 
+file="/system/bin/su" argv="/system/bin/su -c \necho \"
+=== ADB state ===\"\ngetprop init.svc.adbd\ngetprop sys
+.usb.config\ngetprop sys.usb.adb.disabled\ngetprop vend
+or.sys.usb.adb.disabled\ngetprop persist.adb.tcp.port\n
+getprop persist.adb.tls_server.enable\n"
+/data/adb/ksu/log/sulog-2026-11-11.log:9045:ts_ns=60037
+7432425 seq=481 type=root_execve version=1 retval=0 pid
+=4937 tgid=4937 ppid=24827 uid=0 euid=0 comm="3" file="
+/system/bin/sh" argv="/system/bin/sh -c \necho \"=== AD
+B state ===\"\ngetprop init.svc.adbd\ngetprop sys.usb.c
+onfig\ngetprop sys.usb.adb.disabled\ngetprop vendor.sys
+.usb.adb.disabled\ngetprop persist.adb.tcp.port\ngetpro
+p persist.adb.tls_server.enable\n"
+/data/adb/ksu/log/sulog-2026-11-11.log:9046:ts_ns=60038
+4898102 seq=482 type=root_execve version=1 retval=0 pid
+=4948 tgid=4948 ppid=4937 uid=0 euid=0 comm="sh" file="
+/system/bin/getprop" argv="getprop init.svc.adbd"
+/data/adb/ksu/log/sulog-2026-11-11.log:9052:ts_ns=65321
+5879175 seq=488 type=sucompat version=1 retval=0 pid=75
+35 tgid=7535 ppid=24827 uid=10349 euid=10349 comm="sh" 
+file="/system/bin/su" argv="/system/bin/su -c \necho \"
+=== USB state ===\"\ngetprop sys.usb.state\ngetprop sys
+.usb.config\ngetprop persist.sys.usb.config\ngetprop ve
+ndor.usb.config\n\necho\necho \"=== ADB state ===\"\nge
+tprop init.svc.adbd\ngetprop sys.usb.adb.disabled\ngetp
+rop vendor.sys.usb.adb.disabled\n\necho\nech"
+/data/adb/ksu/log/sulog-2026-11-11.log:9053:ts_ns=65323
+3177352 seq=489 type=root_execve version=1 retval=0 pid
+=7535 tgid=7535 ppid=24827 uid=0 euid=0 comm="3" file="
+/system/bin/sh" argv="/system/bin/sh -c \necho \"=== US
+B state ===\"\ngetprop sys.usb.state\ngetprop sys.usb.c
+onfig\ngetprop persist.sys.usb.config\ngetprop vendor.u
+sb.config\n\necho\necho \"=== ADB state ===\"\ngetprop 
+init.svc.adbd\ngetprop sys.usb.adb.disabled\ngetprop ve
+ndor.sys.usb.adb.disabled\n\necho\nech"
+/data/adb/ksu/log/sulog-2026-11-11.log:9058:ts_ns=65327
+4841467 seq=494 type=root_execve version=1 retval=0 pid
+=7542 tgid=7542 ppid=7535 uid=0 euid=0 comm="sh" file="
+/system/bin/getprop" argv="getprop init.svc.adbd"
+/data/adb/ksu/log/sulog-2026-11-11.log:9064:ts_ns=66465
+7245629 seq=500 type=sucompat version=1 retval=0 pid=82
+20 tgid=8220 ppid=24827 uid=10349 euid=10349 comm="sh" 
+file="/system/bin/su" argv="/system/bin/su -c \ngrep -R
+niE \\\n\"sys.usb.config|vendor.usb.config|persist.adb|
+start adbd|ctl.start.*adbd|adb.*enable\" \\\n/data/adb/
+modules \\\n--include=\"*.sh\" \\\n--include=\"*.prop\"
+ \\\n--include=\"*.conf\" \\\n2>/dev/null\n"
+/data/adb/ksu/log/sulog-2026-11-11.log:9065:ts_ns=66466
+8614640 seq=501 type=root_execve version=1 retval=0 pid
+=8220 tgid=8220 ppid=24827 uid=0 euid=0 comm="3" file="
+/system/bin/sh" argv="/system/bin/sh -c \ngrep -RniE \\
+\n\"sys.usb.config|vendor.usb.config|persist.adb|start 
+adbd|ctl.start.*adbd|adb.*enable\" \\\n/data/adb/module
+s \\\n--include=\"*.sh\" \\\n--include=\"*.prop\" \\\n-
+-include=\"*.conf\" \\\n2>/dev/null\n"
+/data/adb/ksu/log/sulog-2026-11-11.log:9066:ts_ns=66469
+6744483 seq=502 type=root_execve version=1 retval=0 pid
+=8221 tgid=8221 ppid=8220 uid=0 euid=0 comm="sh" file="
+/system/bin/grep" argv="grep -RniE sys.usb.config|vendo
+r.usb.config|persist.adb|start adbd|ctl.start.*adbd|adb
+.*enable /data/adb/modules --include=*.sh --include=*.p
+rop --include=*.conf"
+/data/adb/ksu/log/sulog-2026-11-11.log:9121:ts_ns=12585
+01663684 seq=557 type=sucompat version=1 retval=0 pid=2
+6294 tgid=26294 ppid=24827 uid=10349 euid=10349 comm="s
+h" file="/system/bin/su" argv="/system/bin/su -c \necho
+ \"========== TRADE-IN MODE PROPERTIES ==========\"\nge
+tprop persist.adb.tradeinmode\ngetprop service.adb.trad
+einmode\ngetprop init.svc.adbd\n\necho\necho \"========
+== DEVICE SETUP STATUS ==========\"\nsettings get secur
+e user_setup_complete\nsettings get global"
+/data/adb/ksu/log/sulog-2026-11-11.log:9122:ts_ns=12585
+10851861 seq=558 type=root_execve version=1 retval=0 pi
+d=26294 tgid=26294 ppid=24827 uid=0 euid=0 comm="3" fil
+e="/system/bin/sh" argv="/system/bin/sh -c \necho \"===
+======= TRADE-IN MODE PROPERTIES ==========\"\ngetprop 
+persist.adb.tradeinmode\ngetprop service.adb.tradeinmod
+e\ngetprop init.svc.adbd\n\necho\necho \"========== DEV
+ICE SETUP STATUS ==========\"\nsettings get secure user
+_setup_complete\nsettings get global"
+/data/adb/ksu/log/sulog-2026-11-11.log:9125:ts_ns=12585
+35266444 seq=561 type=root_execve version=1 retval=0 pi
+d=26297 tgid=26297 ppid=26294 uid=0 euid=0 comm="sh" fi
+le="/system/bin/getprop" argv="getprop init.svc.adbd"
+/data/adb/ksu/log/sulog-2026-11-11.log:9130:ts_ns=12585
+85322226 seq=566 type=root_execve version=1 retval=0 pi
+d=26306 tgid=26306 ppid=26294 uid=0 euid=0 comm="sh" fi
+le="/system/bin/pidof" argv="pidof adbd"
+/data/adb/ksu/log/sulog-2026-11-11.log:9144:ts_ns=13409
+58798184 seq=580 type=root_execve version=1 retval=0 pi
+d=26955 tgid=26955 ppid=26951 uid=0 euid=0 comm="sh" fi
+le="/system/bin/grep" argv="grep -RniE service adbd|sta
+rt adbd|restart adbd|tradeinmode|ctl.start.*adbd /syste
+m/etc/init"
+/data/adb/ksu/log/sulog-2026-11-11.log:9145:ts_ns=13411
+25943496 seq=581 type=root_execve version=1 retval=0 pi
+d=26957 tgid=26957 ppid=26951 uid=0 euid=0 comm="sh" fi
+le="/system/bin/grep" argv="grep -RniE service adbd|sta
+rt adbd|restart adbd|tradeinmode|ctl.start.*adbd /syste
+m_ext/etc/init"
+/data/adb/ksu/log/sulog-2026-11-11.log:9146:ts_ns=13411
+91886100 seq=582 type=root_execve version=1 retval=0 pi
+d=26958 tgid=26958 ppid=26951 uid=0 euid=0 comm="sh" fi
+le="/system/bin/grep" argv="grep -RniE service adbd|sta
+rt adbd|restart adbd|tradeinmode|ctl.start.*adbd /vendo
+r/etc/init"
+/data/adb/ksu/log/sulog-2026-11-11.log:9147:ts_ns=13414
+21555215 seq=583 type=root_execve version=1 retval=0 pi
+d=26959 tgid=26959 ppid=26951 uid=0 euid=0 comm="sh" fi
+le="/system/bin/grep" argv="grep -RniE service adbd|sta
+rt adbd|restart adbd|tradeinmode|ctl.start.*adbd /odm/e
+tc/init"
+/data/adb/ksu/log/sulog-2026-11-11.log:9148:ts_ns=13414
+33228236 seq=584 type=root_execve version=1 retval=0 pi
+d=26960 tgid=26960 ppid=26951 uid=0 euid=0 comm="sh" fi
+le="/system/bin/grep" argv="grep -RniE service adbd|sta
+rt adbd|restart adbd|tradeinmode|ctl.start.*adbd /produ
+ct/etc/init"
+/data/adb/ksu/log/sulog-2026-11-11.log:9149:ts_ns=13414
+48835059 seq=585 type=root_execve version=1 retval=0 pi
+d=26961 tgid=26961 ppid=26951 uid=0 euid=0 comm="sh" fi
+le="/system/bin/grep" argv="grep -RniE service adbd|sta
+rt adbd|restart adbd|tradeinmode|ctl.start.*adbd /syste
+m/etc"
+/data/adb/ksu/log/sulog-2026-11-11.log:9153:ts_ns=13496
+21381878 seq=589 type=root_execve version=1 retval=0 pi
+d=27017 tgid=27017 ppid=26951 uid=0 euid=0 comm="sh" fi
+le="/system/bin/pidof" argv="pidof adbd"
+/data/adb/ksu/log/sulog-2026-11-11.log:9158:ts_ns=15283
+41267696 seq=594 type=sucompat version=1 retval=0 pid=2
+8836 tgid=28836 ppid=24827 uid=10349 euid=10349 comm="s
+h" file="/system/bin/su" argv="/system/bin/su -c \necho
+ \"========== ADB INIT SERVICE ==========\"\nsed -n \"1
+,115p\" /system/etc/init/hw/init.usb.rc\n\necho\necho \
+"========== ADB INIT FILE OWNERSHIP ==========\"\nls -l
+Z /system/etc/init/hw/init.usb.rc\nls -lZ /apex/com.and
+roid.adbd/bin/adbd\n\necho\necho \"========== "
+/data/adb/ksu/log/sulog-2026-11-11.log:9159:ts_ns=15283
+51232591 seq=595 type=root_execve version=1 retval=0 pi
+d=28836 tgid=28836 ppid=24827 uid=0 euid=0 comm="3" fil
+e="/system/bin/sh" argv="/system/bin/sh -c \necho \"===
+======= ADB INIT SERVICE ==========\"\nsed -n \"1,115p\
+" /system/etc/init/hw/init.usb.rc\n\necho\necho \"=====
+===== ADB INIT FILE OWNERSHIP ==========\"\nls -lZ /sys
+tem/etc/init/hw/init.usb.rc\nls -lZ /apex/com.android.a
+dbd/bin/adbd\n\necho\necho \"========== "
+/data/adb/ksu/log/sulog-2026-11-11.log:9162:ts_ns=15283
+80390456 seq=598 type=root_execve version=1 retval=0 pi
+d=28840 tgid=28840 ppid=28836 uid=0 euid=0 comm="sh" fi
+le="/system/bin/ls" argv="ls -lZ /apex/com.android.adbd
+/bin/adbd"
+/data/adb/ksu/log/sulog-2026-11-11.log:9163:ts_ns=15283
+89712487 seq=599 type=root_execve version=1 retval=0 pi
+d=28841 tgid=28841 ppid=28836 uid=0 euid=0 comm="sh" fi
+le="/system/bin/grep" argv="grep -RniE root_seclabel|ti
+m_seclabel|adbd /data/adb/ksu /data/adb/modules"
+/data/adb/ksu/log/logcat.log:4168:11-16 10:50:20.370  1
+130  1130 D vold_prepare_subdirs: Setting up mode 771 u
+id 0 gid 1000 context u:object_r:apex_module_data_file:
+s0 on path: /data/misc_de/0/apexdata/com.android.adbd
+/data/adb/ksu/log/logcat.log:17691:11-11 17:41:25.379  
+2101  2101 I auditd  : type=1400 audit(0.0:174): avc:  
+denied  { read } for  comm="adbd" name="u:object_r:vend
+or_default_prop:s0" dev="tmpfs" ino=447 scontext=u:r:ad
+bd:s0 tcontext=u:object_r:vendor_default_prop:s0 tclass
+=file permissive=0
+/data/adb/ksu/log/logcat.log:17692:11-11 17:41:25.379  
+2101  2101 W adbd    : type=1400 audit(0.0:174): avc:  
+denied  { read } for  name="u:object_r:vendor_default_p
+rop:s0" dev="tmpfs" ino=447 scontext=u:r:adbd:s0 tconte
+xt=u:object_r:vendor_default_prop:s0 tclass=file permis
+sive=0
+/data/adb/ksu/log/logcat.log:17693:11-11 17:41:25.379  
+2101  2101 I auditd  : type=1400 audit(0.0:175): avc:  
+denied  { read } for  comm="adbd" name="u:object_r:vend
+or_default_prop:s0" dev="tmpfs" ino=447 scontext=u:r:ad
+bd:s0 tcontext=u:object_r:vendor_default_prop:s0 tclass
+=file permissive=0
+/data/adb/ksu/log/logcat.log:17694:11-11 17:41:25.379  
+2101  2101 W adbd    : type=1400 audit(0.0:175): avc:  
+denied  { read } for  name="u:object_r:vendor_default_p
+rop:s0" dev="tmpfs" ino=447 scontext=u:r:adbd:s0 tconte
+xt=u:object_r:vendor_default_prop:s0 tclass=file permis
+sive=0
+/data/adb/ksu/log/logcat.log:17834:11-11 17:41:25.467  
+2101  2101 I adbd    : persist.adb.watchdog set to ''
+/data/adb/ksu/log/logcat.log:17835:11-11 17:41:25.467  
+2101  2101 I adbd    : persist.sys.test_harness set to 
+''
+/data/adb/ksu/log/logcat.log:17836:11-11 17:41:25.467  
+2101  2101 I adbd    : adb watchdog timeout set to 600 
+seconds
+/data/adb/ksu/log/logcat.log:17837:11-11 17:41:25.467  
+2101  2101 I adbd    : adbd_auth detected v=1 (max_hand
+led=3)
+/data/adb/ksu/log/logcat.log:17838:11-11 17:41:25.468  
+2101  2101 I adbd    : wifi_init: Starting property obs
+erver thread
+/data/adb/ksu/log/logcat.log:17839:11-11 17:41:25.468  
+2101  2101 I adbd    : adbd started
+/data/adb/ksu/log/logcat.log:17852:11-11 17:41:25.473  
+2101  2183 I adbd    : Waiting for persist.adb.tls_serv
+er.enable=1
+/data/adb/ksu/log/logcat.log:17856:11-11 17:41:25.476  
+2101  2184 I adbd    : opening control endpoint /dev/us
+b-ffs/adb/ep0
+/data/adb/ksu/log/logcat.log:22337:11-11 17:41:26.516  
+2101  2197 W adbd    : timed out while waiting for FUNC
+TIONFS_BIND, trying again
+/data/adb/ksu/log/logcat.log:22338:11-11 17:41:26.516  
+2101  2197 I adbd    : UsbFfs: connection terminated: m
+onitor thread finished
+/data/adb/ksu/log/logcat.log:22423:11-11 17:41:26.593  
+2101  2184 I adbd    : opening control endpoint /dev/us
+b-ffs/adb/ep0
+/data/adb/ksu/log/logcat.log:24645:11-11 17:41:27.596  
+2101  2356 W adbd    : timed out while waiting for FUNC
+TIONFS_BIND, trying again
+/data/adb/ksu/log/logcat.log:24649:11-11 17:41:27.597  
+2101  2356 I adbd    : UsbFfs: connection terminated: m
+onitor thread finished
+/data/adb/ksu/log/logcat.log:24743:11-11 17:41:27.653  
+2101  2184 I adbd    : opening control endpoint /dev/us
+b-ffs/adb/ep0
+/data/adb/ksu/log/logcat.log:25441:11-11 17:41:28.656  
+2101  2562 W adbd    : timed out while waiting for FUNC
+TIONFS_BIND, trying again
+/data/adb/ksu/log/logcat.log:25442:11-11 17:41:28.656  
+2101  2562 I adbd    : UsbFfs: connection terminated: m
+onitor thread finished
+/data/adb/ksu/log/logcat.log:25518:11-11 17:41:28.700  
+2101  2184 I adbd    : opening control endpoint /dev/us
+b-ffs/adb/ep0
+/data/adb/ksu/log/logcat.log:25738:11-11 17:41:29.759  
+2744  2751 E Diag_Lib: DPL : gIsQXDMDisabled 0, gIsADBD
+isabled 1, gIsDebugDisabled 0, gIsIMSLogsDisabled 0 gIs
+DebugDataPathDisabled = 0
+/data/adb/ksu/log/logcat.log:25846:11-11 17:41:29.771  
+2744  2751 E Diag_Lib: DPL : gIsQXDMDisabled 0, gIsADBD
+isabled 1, gIsDebugDisabled 0, gIsIMSLogsDisabled 0 gIs
+DebugDataPathDisabled = 0
+/data/adb/ksu/log/logcat.log:27303:11-11 17:41:33.902  
+2714  2714 D CompatConfig: No directory /apex/com.andro
+id.adbd/etc/compatconfig, skipping
+/data/adb/ksu/log/logcat.log:27607:11-11 17:41:34.143  
+2714  2714 I PackageWatchdog: Updated health check stat
+e for package com.google.android.adbd: INACTIVE -> PASS
+ED
+/data/adb/ksu/log/logcat.log:27839:11-11 17:41:34.729  
+2714  2714 W PackageManager: No package known for packa
+ge restrictions com.google.android.adbd
+/data/adb/ksu/log/logcat.log:28357:11-11 17:41:34.836  
+2714  2714 D PackageManager: Directories scanned as sys
+tem partitions: [/system:0, /vendor:524288, /odm:419430
+4, /oem:262144, /product:1048576, /system_ext:2097152, 
+/apex/com.android.apex.cts.shim:41943040, /apex/com.and
+roid.media.swcodec:8388608, /apex/com.android.cellbroad
+cast:8388608, /apex/com.android.tethering:8388608, /ape
+x/com.android.nfcservices:41943040, /apex/com.android.b
+tservices:41943040, /apex/com.android.adservices:838860
+8, /apex/com.android.mediaprovider:8388608, /apex/com.a
+ndroid.vndk.v33:44040192, /apex/com.android.uwb:4194304
+0, /apex/com.android.appsearch:8388608, /apex/com.googl
+e.mainline.primary.libs:41943040, /apex/com.android.tzd
+ata:8388608, /apex/com.android.runtime:41943040, /apex/
+com.android.rkpd:41943040, /apex/com.android.vndk.v30:4
+4040192, /apex/com.android.media:8388608, /apex/com.and
+roid.permission:8388608, /apex/com.android.art:8388608,
+ /apex/com.android.i18n:41943040, /apex/com.android.ips
+ec:8388608, /apex/com.android.os.statsd:8388608, /apex/
+com.android.conscrypt:8388608, /apex/com.android.sdkext
+:8388608, /apex/com.android.wifi:41943040, /apex/com.an
+droid.configinfrastructure:8388608, /apex/com.android.d
+evicelock:41943040, /apex/com.android.resolv:8388608, /
+apex/com.android.adbd:8388608, /apex/com.android.neural
+networks:8388608, /apex/com.android.scheduling:8388608,
+ /apex/com.android.compos:44040192, /apex/com.android.v
+ndk.v31:44040192, /apex/com.android.virt:41943040, /ape
+x/com.android.profiling:41943040, /apex/com.android.vnd
+k.v32:44040192, /apex/com.android.extservices:8388608, 
+/apex/com.android.ondevicepersonalization:8388608, /ape
+x/com.android.healthfitness:8388608]
+/data/adb/ksu/log/logcat.log:28708:11-11 17:41:35.233  
+2714  2714 I PackageManager: /system/apex/com.google.an
+droid.adbd_compressed.apex changed; collecting certs
+/data/adb/ksu/log/logcat.log:28743:11-11 17:41:35.336  
+2714  2714 I PackageManager: /data/apex/active/com.andr
+oid.adbd@372038020.apex changed; collecting certs
+/data/adb/ksu/log/logcat.log:28749:11-11 17:41:35.375  
+2714  2714 I PackageManager: Update system package com.
+google.android.adbd code path from /system/apex/com.goo
+gle.android.adbd_compressed.apex to /data/apex/active/c
+om.android.adbd@372038020.apex; Retain data and using n
+ew
+/data/adb/ksu/log/logcat.log:28750:11-11 17:41:35.375  
+2714  2714 W PackageManager: Ignoring persisted ABI ove
+rride for package com.google.android.adbd
+/data/adb/ksu/log/logcat.log:29313:11-11 17:41:36.978  
+2714  2714 D PackageManager: No files in app dir /apex/
+com.android.adbd/priv-app
+/data/adb/ksu/log/logcat.log:29314:11-11 17:41:36.978  
+2714  2714 D PackageManager: No files in app dir /apex/
+com.android.adbd/app
+/data/adb/ksu/log/logcat.log:31085:11-11 17:41:39.086  
+2714  2968 W PackageManager: Skipping preparing app dat
+a for com.google.android.adbd
+/data/adb/ksu/log/dmesg.log:993:<6>[    1.973771] Kerne
+lSU: Cached adbd SID: 87
+/data/adb/ksu/log/dmesg.log:1533:<14>[    2.164341] ape
+xd-bootstrap: Found pre-installed APEX /system/apex/com
+.google.android.adbd_compressed.apex
+/data/adb/ksu/log/dmesg.log:4675:<14>[    5.300700] ape
+xd: Found pre-installed APEX /system/apex/com.google.an
+droid.adbd_compressed.apex
+/data/adb/ksu/log/dmesg.log:4744:<14>[    5.315088] ape
+xd: Found updated apex /data/apex/active/com.android.ad
+bd@372038020.apex
+/data/adb/ksu/log/dmesg.log:4816:<14>[    5.386770] ape
+xd: Successfully mounted package /data/apex/active/com.
+android.adbd@372038020.apex on /apex/com.android.adbd@3
+72038020 duration=48
+/data/adb/ksu/log/dmesg.log:4923:<14>[    5.514208] ini
+t: Parsing file /apex/com.android.adbd/etc/init.rc...
+/data/adb/ksu/log/dmesg.log:7687:<14>[   11.397812] ini
+t: starting service 'adbd'...
+/data/adb/ksu/log/dmesg.log:7688:<14>[   11.399054] ini
+t: Created socket '/dev/socket/adbd', mode 660, user 10
+00, group 1000
+/data/adb/ksu/log/dmesg.log:7691:<14>[   11.407337] ini
+t: ... started service 'adbd' has pid 2101
+/data/adb/ksu/log/dmesg.log:7692:<14>[   11.407381] ini
+t: Control message: Processed ctl.start for 'adbd' from
+ pid: 2055 (/system/bin/usbd)
+/data/adb/ksu/log/dmesg.log:7722:<36>[   11.478518] typ
+e=1400 audit(1794399085.379:174): avc:  denied  { read 
+} for  comm="adbd" name="u:object_r:vendor_default_prop
+:s0" dev="tmpfs" ino=447 scontext=u:r:adbd:s0 tcontext=
+u:object_r:vendor_default_prop:s0 tclass=file permissiv
+e=0
+/data/adb/ksu/log/dmesg.log:7723:<36>[   11.478747] typ
+e=1400 audit(1794399085.379:175): avc:  denied  { read 
+} for  comm="adbd" name="u:object_r:vendor_default_prop
+:s0" dev="tmpfs" ino=447 scontext=u:r:adbd:s0 tcontext=
+u:object_r:vendor_default_prop:s0 tclass=file permissiv
+e=0
+/data/adb/ksu/log/logcat.old.log:4063:11-16 10:33:19.38
+6  1131  1131 D vold_prepare_subdirs: Setting up mode 7
+71 uid 0 gid 1000 context u:object_r:apex_module_data_f
+ile:s0 on path: /data/misc_de/0/apexdata/com.android.ad
+bd
+/data/adb/ksu/log/logcat.old.log:16515:11-11 17:24:25.0
+70  2070  2070 I auditd  : type=1400 audit(0.0:178): av
+c:  denied  { read } for  comm="adbd" name="u:object_r:
+vendor_default_prop:s0" dev="tmpfs" ino=447 scontext=u:
+r:adbd:s0 tcontext=u:object_r:vendor_default_prop:s0 tc
+lass=file permissive=0
+/data/adb/ksu/log/logcat.old.log:16516:11-11 17:24:25.0
+70  2070  2070 W adbd    : type=1400 audit(0.0:178): av
+c:  denied  { read } for  name="u:object_r:vendor_defau
+lt_prop:s0" dev="tmpfs" ino=447 scontext=u:r:adbd:s0 tc
+ontext=u:object_r:vendor_default_prop:s0 tclass=file pe
+rmissive=0
+/data/adb/ksu/log/logcat.old.log:16517:11-11 17:24:25.0
+70  2070  2070 I auditd  : type=1400 audit(0.0:179): av
+c:  denied  { read } for  comm="adbd" name="u:object_r:
+vendor_default_prop:s0" dev="tmpfs" ino=447 scontext=u:
+r:adbd:s0 tcontext=u:object_r:vendor_default_prop:s0 tc
+lass=file permissive=0
+/data/adb/ksu/log/logcat.old.log:16518:11-11 17:24:25.0
+70  2070  2070 W adbd    : type=1400 audit(0.0:179): av
+c:  denied  { read } for  name="u:object_r:vendor_defau
+lt_prop:s0" dev="tmpfs" ino=447 scontext=u:r:adbd:s0 tc
+ontext=u:object_r:vendor_default_prop:s0 tclass=file pe
+rmissive=0
+/data/adb/ksu/log/logcat.old.log:16627:11-11 17:24:25.1
+56  2070  2070 I adbd    : persist.adb.watchdog set to 
+''
+/data/adb/ksu/log/logcat.old.log:16628:11-11 17:24:25.1
+56  2070  2070 I adbd    : persist.sys.test_harness set
+ to ''
+/data/adb/ksu/log/logcat.old.log:16629:11-11 17:24:25.1
+56  2070  2070 I adbd    : adb watchdog timeout set to 
+600 seconds
+/data/adb/ksu/log/logcat.old.log:16630:11-11 17:24:25.1
+56  2070  2070 I adbd    : adbd_auth detected v=1 (max_
+handled=3)
+/data/adb/ksu/log/logcat.old.log:16631:11-11 17:24:25.1
+56  2070  2070 I adbd    : wifi_init: Starting property
+ observer thread
+/data/adb/ksu/log/logcat.old.log:16632:11-11 17:24:25.1
+57  2070  2070 I adbd    : adbd started
+/data/adb/ksu/log/logcat.old.log:16633:11-11 17:24:25.1
+58  2070  2125 I adbd    : opening control endpoint /de
+v/usb-ffs/adb/ep0
+/data/adb/ksu/log/logcat.old.log:16710:11-11 17:24:25.1
+71  2070  2124 I adbd    : Waiting for persist.adb.tls_
+server.enable=1
+/data/adb/ksu/log/logcat.old.log:20905:11-11 17:24:26.2
+08  2070  2139 W adbd    : timed out while waiting for 
+FUNCTIONFS_BIND, trying again
+/data/adb/ksu/log/logcat.old.log:20906:11-11 17:24:26.2
+08  2070  2139 I adbd    : UsbFfs: connection terminate
+d: monitor thread finished
+/data/adb/ksu/log/logcat.old.log:21068:11-11 17:24:26.2
+99  2070  2125 I adbd    : opening control endpoint /de
+v/usb-ffs/adb/ep0
+/data/adb/ksu/log/logcat.old.log:23019:11-11 17:24:27.3
+02  2070  2334 W adbd    : timed out while waiting for 
+FUNCTIONFS_BIND, trying again
+/data/adb/ksu/log/logcat.old.log:23020:11-11 17:24:27.3
+03  2070  2334 I adbd    : UsbFfs: connection terminate
+d: monitor thread finished
+/data/adb/ksu/log/logcat.old.log:23046:11-11 17:24:27.3
+59  2070  2125 I adbd    : opening control endpoint /de
+v/usb-ffs/adb/ep0
+/data/adb/ksu/log/logcat.old.log:23889:11-11 17:24:28.3
+67  2070  2554 W adbd    : timed out while waiting for 
+FUNCTIONFS_BIND, trying again
+/data/adb/ksu/log/logcat.old.log:23890:11-11 17:24:28.3
+67  2070  2554 I adbd    : UsbFfs: connection terminate
+d: monitor thread finished
+/data/adb/ksu/log/logcat.old.log:23894:11-11 17:24:28.4
+10  2070  2125 I adbd    : opening control endpoint /de
+v/usb-ffs/adb/ep0
+/data/adb/ksu/log/logcat.old.log:24090:11-11 17:24:29.5
+53  2728  2732 E Diag_Lib: DPL : gIsQXDMDisabled 0, gIs
+ADBDisabled 1, gIsDebugDisabled 0, gIsIMSLogsDisabled 0
+ gIsDebugDataPathDisabled = 0
+/data/adb/ksu/log/logcat.old.log:24189:11-11 17:24:29.5
+62  2728  2732 E Diag_Lib: DPL : gIsQXDMDisabled 0, gIs
+ADBDisabled 1, gIsDebugDisabled 0, gIsIMSLogsDisabled 0
+ gIsDebugDataPathDisabled = 0
+/data/adb/ksu/log/logcat.old.log:25567:11-11 17:24:33.9
+30  2694  2694 D CompatConfig: No directory /apex/com.a
+ndroid.adbd/etc/compatconfig, skipping
+/data/adb/ksu/log/logcat.old.log:25964:11-11 17:24:34.2
+34  2694  2694 I PackageWatchdog: Updated health check 
+state for package com.google.android.adbd: INACTIVE -> 
+PASSED
+/data/adb/ksu/log/logcat.old.log:26179:11-11 17:24:34.8
+11  2694  2694 W PackageManager: No package known for p
+ackage restrictions com.google.android.adbd
+/data/adb/ksu/log/logcat.old.log:26694:11-11 17:24:34.9
+28  2694  2694 D PackageManager: Directories scanned as
+ system partitions: [/system:0, /vendor:524288, /odm:41
+94304, /oem:262144, /product:1048576, /system_ext:20971
+52, /apex/com.android.conscrypt:8388608, /apex/com.andr
+oid.mediaprovider:8388608, /apex/com.android.tzdata:838
+8608, /apex/com.android.tethering:8388608, /apex/com.an
+droid.extservices:8388608, /apex/com.android.ondevicepe
+rsonalization:8388608, /apex/com.android.adbd:8388608, 
+/apex/com.android.art:8388608, /apex/com.android.compos
+:44040192, /apex/com.android.appsearch:8388608, /apex/c
+om.android.uwb:41943040, /apex/com.android.neuralnetwor
+ks:8388608, /apex/com.android.resolv:8388608, /apex/com
+.android.media.swcodec:8388608, /apex/com.android.os.st
+atsd:8388608, /apex/com.android.wifi:41943040, /apex/co
+m.android.ipsec:8388608, /apex/com.android.virt:4194304
+0, /apex/com.android.rkpd:41943040, /apex/com.android.n
+fcservices:41943040, /apex/com.android.sdkext:8388608, 
+/apex/com.android.scheduling:8388608, /apex/com.android
+.vndk.v31:44040192, /apex/com.android.adservices:838860
+8, /apex/com.android.apex.cts.shim:41943040, /apex/com.
+android.permission:8388608, /apex/com.android.healthfit
+ness:8388608, /apex/com.google.mainline.primary.libs:41
+943040, /apex/com.android.i18n:41943040, /apex/com.andr
+oid.btservices:41943040, /apex/com.android.configinfras
+tructure:8388608, /apex/com.android.vndk.v32:44040192, 
+/apex/com.android.vndk.v30:44040192, /apex/com.android.
+devicelock:41943040, /apex/com.android.runtime:41943040
+, /apex/com.android.cellbroadcast:8388608, /apex/com.an
+droid.profiling:41943040, /apex/com.android.media:83886
+08, /apex/com.android.vndk.v33:44040192]
+/data/adb/ksu/log/logcat.old.log:27107:11-11 17:24:35.3
+91  2694  2694 I PackageManager: /system/apex/com.googl
+e.android.adbd_compressed.apex changed; collecting cert
+s
+/data/adb/ksu/log/logcat.old.log:27140:11-11 17:24:35.6
+50  2694  2694 I PackageManager: /data/apex/active/com.
+android.adbd@372038020.apex changed; collecting certs
+/data/adb/ksu/log/logcat.old.log:27146:11-11 17:24:35.6
+93  2694  2694 I PackageManager: Update system package 
+com.google.android.adbd code path from /system/apex/com
+.google.android.adbd_compressed.apex to /data/apex/acti
+ve/com.android.adbd@372038020.apex; Retain data and usi
+ng new
+/data/adb/ksu/log/logcat.old.log:27147:11-11 17:24:35.6
+94  2694  2694 W PackageManager: Ignoring persisted ABI
+ override for package com.google.android.adbd
+/data/adb/ksu/log/logcat.old.log:27602:11-11 17:24:37.2
+35  2694  2694 D PackageManager: No files in app dir /a
+pex/com.android.adbd/priv-app
+/data/adb/ksu/log/logcat.old.log:27603:11-11 17:24:37.2
+35  2694  2694 D PackageManager: No files in app dir /a
+pex/com.android.adbd/app
+/data/adb/ksu/log/logcat.old.log:29340:11-11 17:24:39.5
+30  2694  2955 W PackageManager: Skipping preparing app
+ data for com.google.android.adbd
+/data/adb/ksu/log/dmesg.old.log:997:<6>[    1.981578] K
+ernelSU: Cached adbd SID: 87
+/data/adb/ksu/log/dmesg.old.log:1537:<14>[    2.171440]
+ apexd-bootstrap: Found pre-installed APEX /system/apex
+/com.google.android.adbd_compressed.apex
+/data/adb/ksu/log/dmesg.old.log:4657:<14>[    5.325864]
+ apexd: Found pre-installed APEX /system/apex/com.googl
+e.android.adbd_compressed.apex
+/data/adb/ksu/log/dmesg.old.log:4729:<14>[    5.340021]
+ apexd: Found updated apex /data/apex/active/com.androi
+d.adbd@372038020.apex
+/data/adb/ksu/log/dmesg.old.log:4786:<14>[    5.403583]
+ apexd: Successfully mounted package /data/apex/active/
+com.android.adbd@372038020.apex on /apex/com.android.ad
+bd@372038020 duration=41
+/data/adb/ksu/log/dmesg.old.log:4901:<14>[    5.539503]
+ init: Parsing file /apex/com.android.adbd/etc/init.rc.
+..
+/data/adb/ksu/log/dmesg.old.log:7732:<14>[   11.013111]
+ init: starting service 'adbd'...
+/data/adb/ksu/log/dmesg.old.log:7733:<14>[   11.013458]
+ init: Created socket '/dev/socket/adbd', mode 660, use
+r 1000, group 1000
+/data/adb/ksu/log/dmesg.old.log:7740:<14>[   11.022014]
+ init: ... started service 'adbd' has pid 2070
+/data/adb/ksu/log/dmesg.old.log:7741:<14>[   11.022035]
+ init: Control message: Processed ctl.start for 'adbd' 
+from pid: 2010 (/system/bin/usbd)
+/data/adb/ksu/log/dmesg.old.log:7795:<36>[   11.122313]
+ type=1400 audit(1794398065.070:178): avc:  denied  { r
+ead } for  comm="adbd" name="u:object_r:vendor_default_
+prop:s0" dev="tmpfs" ino=447 scontext=u:r:adbd:s0 tcont
+ext=u:object_r:vendor_default_prop:s0 tclass=file permi
+ssive=0
+/data/adb/ksu/log/dmesg.old.log:7796:<36>[   11.122516]
+ type=1400 audit(1794398065.070:179): avc:  denied  { r
+ead } for  comm="adbd" name="u:object_r:vendor_default_
+prop:s0" dev="tmpfs" ino=447 scontext=u:r:adbd:s0 tcont
+ext=u:object_r:vendor_default_prop:s0 tclass=file permi
+ssive=0
+Binary file /data/adb/modules/teesim/classes.dex matche
+s
+Binary file /data/adb/modules/playintegrityfix/zygisk/a
+rmeabi-v7a.so matches
+Binary file /data/adb/modules/playintegrityfix/zygisk/x
+86_64.so matches
+/data/adb/modules/brene/utils.sh:81:    if_prop_exits_r
+esetprop_n "init.svc.adbd" "stopped"
+/data/adb/modules/brene/utils.sh:82:    if_prop_exits_r
+esetprop_n "init.svc_debug_pid.adbd" ""
+
+========== ADB SERVICE LOGS ==========
+11-11 17:41:25.379 I/auditd  ( 2101): type=1400 audit(0
+.0:175): avc:  denied  { read } for  comm="adbd" name="
+u:object_r:vendor_default_prop:s0" dev="tmpfs" ino=447 
+scontext=u:r:adbd:s0 tcontext=u:object_r:vendor_default
+_prop:s0 tclass=file permissive=0
+11-11 17:41:37.736 I/dvm_lock_sample( 2714): [system_se
+rver,1,android.fg,967,AdbDebuggingManager.java,574,void
+ com.android.server.adb.AdbDebuggingManager$AdbDebuggin
+gThread.stopListening(),-,434,void com.android.server.a
+db.AdbDebuggingManager$AdbDebuggingThread.run(),100]
+11-11 17:43:33.779 I/auditd  (10143): type=1400 audit(0
+.0:67740): avc:  denied  { read } for  comm="binder:101
+43_5" name="u:object_r:system_adbd_prop:s0" dev="tmpfs"
+ ino=366 scontext=u:r:gmscore_app:s0:c512,c768 tcontext
+=u:object_r:system_adbd_prop:s0 tclass=file permissive=
+0 app=com.google.android.gms
+11-11 17:43:33.783 I/auditd  (10143): type=1400 audit(0
+.0:67741): avc:  denied  { read } for  comm="binder:101
+43_5" name="u:object_r:adbd_prop:s0" dev="tmpfs" ino=99
+ scontext=u:r:gmscore_app:s0:c512,c768 tcontext=u:objec
+t_r:adbd_prop:s0 tclass=file permissive=0 app=com.googl
+e.android.gms
+11-11 17:44:53.223 I/auditd  (21942): type=1400 audit(0
+.0:89549): avc:  denied  { read } for  comm="getprop" n
+ame="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=36
+6 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tco
+ntext=u:object_r:system_adbd_prop:s0 tclass=file permis
+sive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:45:03.411 I/auditd  (22360): type=1400 audit(0
+.0:89579): avc:  denied  { read } for  comm="getprop" n
+ame="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=36
+6 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tco
+ntext=u:object_r:system_adbd_prop:s0 tclass=file permis
+sive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:45:09.359 I/auditd  (22645): type=1400 audit(0
+.0:90100): avc:  denied  { read } for  comm="getprop" n
+ame="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=36
+6 scontext=u:r:untrusted_app:s0:c251,c257,c512,c768 tco
+ntext=u:object_r:system_adbd_prop:s0 tclass=file permis
+sive=0 app=net.one97.paytm
+11-11 17:45:13.727 I/auditd  (23038): type=1400 audit(0
+.0:90482): avc:  denied  { read } for  comm="getprop" n
+ame="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=36
+6 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tco
+ntext=u:object_r:system_adbd_prop:s0 tclass=file permis
+sive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:45:23.903 I/auditd  (23531): type=1400 audit(0
+.0:91509): avc:  denied  { read } for  comm="getprop" n
+ame="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=36
+6 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tco
+ntext=u:object_r:system_adbd_prop:s0 tclass=file permis
+sive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:45:34.135 I/auditd  (23900): type=1400 audit(0
+.0:91641): avc:  denied  { read } for  comm="getprop" n
+ame="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=36
+6 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tco
+ntext=u:object_r:system_adbd_prop:s0 tclass=file permis
+sive=0
+11-11 17:45:44.339 I/auditd  (24248): type=1400 audit(0
+.0:92120): avc:  denied  { read } for  comm="getprop" n
+ame="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=36
+6 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tco
+ntext=u:object_r:system_adbd_prop:s0 tclass=file permis
+sive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:45:54.547 I/auditd  (24508): type=1400 audit(0
+.0:92127): avc:  denied  { read } for  comm="getprop" n
+ame="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=36
+6 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tco
+ntext=u:object_r:system_adbd_prop:s0 tclass=file permis
+sive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:46:04.747 I/auditd  (24949): type=1400 audit(0
+.0:92417): avc:  denied  { read } for  comm="getprop" n
+ame="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=36
+6 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tco
+ntext=u:object_r:system_adbd_prop:s0 tclass=file permis
+sive=0
+11-11 17:46:19.951 I/auditd  (25759): type=1400 audit(0
+.0:97933): avc:  denied  { read } for  comm="getprop" n
+ame="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=36
+6 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tco
+ntext=u:object_r:system_adbd_prop:s0 tclass=file permis
+sive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:46:35.155 I/auditd  (26150): type=1400 audit(0
+.0:98069): avc:  denied  { read } for  comm="getprop" n
+ame="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=36
+6 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tco
+ntext=u:object_r:system_adbd_prop:s0 tclass=file permis
+sive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:46:50.363 I/auditd  (26998): type=1400 audit(0
+.0:102716): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:47:00.455 I/am_cpu  ( 2714): [24983,2000,adbd,
+0,0,0]
+11-11 17:47:05.551 I/auditd  (27402): type=1400 audit(0
+.0:102840): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:47:20.771 I/auditd  (27881): type=1400 audit(0
+.0:103102): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:47:35.963 I/auditd  (28352): type=1400 audit(0
+.0:103256): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:47:51.155 I/auditd  (28693): type=1400 audit(0
+.0:103265): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:48:21.467 I/auditd  (29639): type=1400 audit(0
+.0:103468): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:48:36.655 I/auditd  (30196): type=1400 audit(0
+.0:103550): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:48:51.847 I/auditd  (30653): type=1400 audit(0
+.0:103750): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:49:07.023 I/auditd  (31133): type=1400 audit(0
+.0:103755): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:49:22.215 I/auditd  (31441): type=1400 audit(0
+.0:103765): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:49:45.909 I/auditd  (32124): type=1400 audit(0
+.0:104231): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:50:01.101 I/auditd  (32502): type=1400 audit(0
+.0:104236): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:50:16.277 I/auditd  (  676): type=1400 audit(0
+.0:104591): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:50:31.461 I/auditd  ( 1351): type=1400 audit(0
+.0:104597): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:50:46.625 I/auditd  ( 2826): type=1400 audit(0
+.0:104606): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:51:01.809 I/auditd  ( 3513): type=1400 audit(0
+.0:104803): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:51:32.149 I/auditd  ( 5312): type=1400 audit(0
+.0:104989): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:51:47.329 I/auditd  ( 6241): type=1400 audit(0
+.0:105134): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:52:02.505 I/auditd  ( 6769): type=1400 audit(0
+.0:105144): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:52:09.235 I/am_cpu  ( 2714): [24983,2000,adbd,
+300282,270,690]
+11-11 17:52:17.721 I/auditd  ( 7557): type=1400 audit(0
+.0:105368): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:52:32.909 I/auditd  ( 8669): type=1400 audit(0
+.0:105851): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:52:48.097 I/auditd  ( 9360): type=1400 audit(0
+.0:105918): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:53:03.285 I/auditd  ( 9821): type=1400 audit(0
+.0:105927): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:53:18.469 I/auditd  (10371): type=1400 audit(0
+.0:106084): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:53:48.829 I/auditd  (11980): type=1400 audit(0
+.0:106897): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:54:03.997 I/auditd  (12393): type=1400 audit(0
+.0:106917): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:54:19.177 I/auditd  (12952): type=1400 audit(0
+.0:106922): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:54:34.337 I/auditd  (13426): type=1400 audit(0
+.0:107491): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:55:19.861 I/auditd  (16155): type=1400 audit(0
+.0:107909): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:55:36.631 I/am_cpu  ( 2714): [24983,2000,adbd,
+207396,130,480]
+11-11 17:55:50.265 I/auditd  (17677): type=1400 audit(0
+.0:108542): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:56:05.445 I/auditd  (18670): type=1400 audit(0
+.0:108551): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:56:20.617 I/auditd  (19267): type=1400 audit(0
+.0:108556): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:56:35.801 I/auditd  (20093): type=1400 audit(0
+.0:108706): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:56:50.981 I/auditd  (20590): type=1400 audit(0
+.0:109232): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:57:06.149 I/auditd  (21240): type=1400 audit(0
+.0:109241): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:57:09.399 I/am_cpu  ( 2714): [24983,2000,adbd,
+92773,90,230]
+11-11 17:57:21.305 I/auditd  (21646): type=1400 audit(0
+.0:109457): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:57:51.649 I/auditd  (22698): type=1400 audit(0
+.0:109941): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:58:06.817 I/auditd  (23224): type=1400 audit(0
+.0:110140): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 17:58:22.001 I/auditd  (23836): type=1400 audit(0
+.0:110200): avc:  denied  { read } for  comm="getprop" 
+name="u:object_r:system_adbd_prop:s0" dev="tmpfs" ino=3
+66 scontext=u:r:untrusted_app:s0:c104,c257,c512,c768 tc
+ontext=u:object_r:system_adbd_prop:s0 tclass=file permi
+ssive=0 app=com.google.android.apps.nbu.paisa.user
+11-11 18:02:09.554 I/am_cpu  ( 2714): [24983,2000,adbd,
+300150,220,880]
+11-11 18:02:37.851 I/am_cpu  ( 2714): [24983,2000,adbd,
+28288,10,90]
+11-11 18:08:14.573 I/am_cpu  ( 2714): [24983,2000,adbd,
+271920,220,810]
+11-11 18:12:49.199 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:12:49.199 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:12:49.228 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:12:59.274 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:12:59.274 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:12:59.296 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:13:35.978 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:13:35.978 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:13:36.001 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:13:42.983 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:13:42.983 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:13:43.018 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:13:47.743 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:13:49.648 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:13:49.683 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:13:54.350 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:13:54.350 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:13:54.382 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:13:58.828 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:13:58.828 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:13:58.855 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:14:05.412 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:14:05.412 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:14:05.432 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:14:10.398 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:14:10.398 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:14:10.429 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:14:15.476 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:14:15.476 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:14:15.501 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:14:31.083 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:14:31.083 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:14:31.098 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:14:35.905 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:14:35.905 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:14:35.937 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+11-11 18:14:57.135 W/adbd    (24983): timed out while w
+aiting for FUNCTIONFS_BIND, trying again
+11-11 18:14:57.135 I/adbd    (24983): UsbFfs: connectio
+n terminated: monitor thread finished
+11-11 18:14:57.173 I/adbd    (24983): opening control e
+ndpoint /dev/usb-ffs/adb/ep0
+┌──(pavan3999㉿localhost)-[~]
+└─$
